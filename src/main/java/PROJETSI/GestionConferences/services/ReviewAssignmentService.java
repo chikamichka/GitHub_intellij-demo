@@ -37,6 +37,7 @@ public class ReviewAssignmentService {
         Conference conference = conferenceRepository.findById(conferenceId)
                 .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
 
+        assert editor != null;
         if (!editor.getId().equals(conference.getEditor().getId())) {
             throw new IllegalStateException("Only the editor can assign reviewers for this conference.");
         }
@@ -63,6 +64,7 @@ public class ReviewAssignmentService {
         Conference conference = conferenceRepository.findById(conferenceId)
                 .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
 
+        assert editor != null;
         if (!editor.getId().equals(conference.getEditor().getId())) {
             throw new IllegalStateException("Only the editor can view assignments for this conference.");
         }

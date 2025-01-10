@@ -32,6 +32,7 @@ public class UserService {
     @Autowired
     private ReviewRepository reviewRepository;
 
+
     public User createUser(User user) {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = userDetails.getUsername();

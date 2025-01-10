@@ -51,6 +51,7 @@ public class ReviewService {
                 .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + submissionId));
         User editor = userRepository.findByUsername(username).orElse(null);
 
+        assert editor != null;
         if (!editor.getId().equals(submission.getConference().getEditor().getId())) {
             throw new IllegalStateException("Only the editor can view reviews for this submission.");
         }
@@ -63,6 +64,7 @@ public class ReviewService {
         Review existingReview = reviewRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Review not found with id " + id));
 
+        assert reviewer != null;
         if (!existingReview.getReviewer().getId().equals(reviewer.getId())) {
             throw new IllegalStateException("You can only update your own reviews.");
         }
