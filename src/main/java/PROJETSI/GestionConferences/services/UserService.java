@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 
 @Service
@@ -81,17 +80,6 @@ public class UserService {
 
     public User getUserById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with id " + id));
-    }
-
-    public User createAdminUser() {
-        User admin = new User();
-        admin.setNom("Admin");
-        admin.setPrenom("Super");
-        admin.setUsername("admin");
-        admin.setPassword(new BCryptPasswordEncoder().encode("admin123"));
-        admin.setRoles(Set.of("EDITOR", "AUTHOR", "REVIEWER"));
-        admin.setInfos("Admin user");
-        return userRepository.save(admin);
     }
 
     public List<Conference> getConferencesForEditor(Long editorId) {
