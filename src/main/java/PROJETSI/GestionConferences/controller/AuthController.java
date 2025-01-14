@@ -57,6 +57,6 @@ public class AuthController {
     }
 
     // Define the LoginResponse record here
-    @Getter
+
     record LoginResponse(String token) {}
 }
