@@ -14,8 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 
 @Service
@@ -32,7 +31,6 @@ public class UserService {
     @Autowired
     private ReviewRepository reviewRepository;
 
-
     public User createUser(User user) {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = userDetails.getUsername();
@@ -40,38 +38,35 @@ public class UserService {
         if (currentUser != null && currentUser.getInfos().contains("Admin user")) {
             return userRepository.save(user);
         } else {
-            throw new IllegalStateException("Only users with 'Admin user' can create new users.");
+            return null;
         }
     }
 
-    public User updateUser(Long id, User user) {
-        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String currentUsername = userDetails.getUsername();
-        User currentUser = userRepository.findByUsername(currentUsername).orElse(null);
-        if (currentUser != null && currentUser.getInfos().contains("Admin user")) {
-            User existingUser = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with id " + id));
-            existingUser.setNom(user.getNom());
-            existingUser.setPrenom(user.getPrenom());
-            existingUser.setUsername(user.getUsername());
-            existingUser.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
-            existingUser.setRoles(user.getRoles());
-            return userRepository.save(existingUser);
-        } else {
-            throw new IllegalStateException("Only users with 'Admin user' can update users.");
+    public User updateUser(Long id, User user, String authenticatedUsername) {
+        User existingUser = userRepository.findById(id).orElse(null);
+        if (existingUser == null || !existingUser.getUsername().equals(authenticatedUsername)) {
+            return null;
         }
+        existingUser.setNom(user.getNom());
+        existingUser.setPrenom(user.getPrenom());
+        existingUser.setUsername(user.getUsername());
+        existingUser.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        existingUser.setRoles(user.getRoles());
+        return userRepository.save(existingUser);
     }
 
-    public void deleteUser(Long id) {
+    public boolean deleteUser(Long id) {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = userDetails.getUsername();
         User currentUser = userRepository.findByUsername(currentUsername).orElse(null);
         if (currentUser != null && currentUser.getInfos().contains("Admin user")) {
             if (!userRepository.existsById(id)) {
-                throw new NoSuchElementException("User not found with id " + id);
+                return false;
             }
             userRepository.deleteById(id);
+            return true;
         } else {
-            throw new IllegalStateException("Only users with 'Admin user' can delete users.");
+            return false;
         }
     }
 
@@ -80,7 +75,7 @@ public class UserService {
     }
 
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with id " + id));
+        return userRepository.findById(id).orElse(null);
     }
 
     public List<Conference> getConferencesForEditor(Long editorId) {
@@ -88,7 +83,7 @@ public class UserService {
         if (editor != null && editor.getRoles().contains("EDITOR")) {
             return conferenceRepository.findByEditor(editor);
         } else {
-            throw new IllegalStateException("User is not an editor.");
+            return null;
         }
     }
 
@@ -97,7 +92,7 @@ public class UserService {
         if (author != null && author.getRoles().contains("AUTHOR")) {
             return submissionRepository.findByAuteursContaining(author);
         } else {
-            throw new IllegalStateException("User is not an author.");
+            return null;
         }
     }
 
@@ -106,12 +101,28 @@ public class UserService {
         if (reviewer != null && reviewer.getRoles().contains("REVIEWER")) {
             return reviewRepository.findByReviewer(reviewer);
         } else {
-            throw new IllegalStateException("User is not a reviewer.");
+            return null;
         }
     }
 
+    public List<Map<String, Object>> getUsersInfo() {
+        List<User> users = (List<User>) userRepository.findAll();
+        List<Map<String, Object>> usersInfo = new ArrayList<>();
+        for (User user : users) {
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("id", user.getId());
+            info.put("nom", user.getNom());
+            info.put("prenom", user.getPrenom());
+            info.put("username", user.getUsername());
+            info.put("infos", user.getInfos());
+            info.put("roles", user.getRoles());
+            usersInfo.add(info);
+        }
+        return usersInfo;
+    }
+
     public boolean hasAdminRole(String username) {
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new NoSuchElementException("User not found with username " + username));
-        return user.getInfos().contains("Admin user");
+        User user = userRepository.findByUsername(username).orElse(null);
+        return user != null && user.getInfos().contains("Admin user");
     }
 }

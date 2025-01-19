@@ -21,7 +21,7 @@ public class ReviewAssignmentController {
 
     @PreAuthorize("hasRole('EDITOR')")
     @PostMapping
-    public ResponseEntity<ReviewAssignment> assignReviewer(
+    public ResponseEntity<?> assignReviewer(
             @RequestParam("submissionId") Long submissionId,
             @RequestParam("reviewerId") Long reviewerId,
             @RequestParam("conferenceId") Long conferenceId,
@@ -29,22 +29,31 @@ public class ReviewAssignmentController {
     ) {
         String username = authentication.getName();
         ReviewAssignment reviewAssignment = reviewAssignmentService.assignReviewer(submissionId, reviewerId, conferenceId, username);
+        if (reviewAssignment == null) {
+            return new ResponseEntity<>("Submission, Reviewer, or Conference not found or assignment not permitted.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewAssignment);
     }
 
     @PreAuthorize("hasRole('REVIEWER')")
     @GetMapping("/reviewer")
-    public ResponseEntity<List<ReviewAssignment>> getAssignmentsByReviewer(Authentication authentication) {
+    public ResponseEntity<?> getAssignmentsByReviewer(Authentication authentication) {
         String username = authentication.getName();
         List<ReviewAssignment> assignments = reviewAssignmentService.getAssignmentsByReviewer(username);
+        if (assignments == null) {
+            return new ResponseEntity<>("Reviewer not found or invalid credentials.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(assignments);
     }
 
     @PreAuthorize("hasRole('EDITOR')")
     @GetMapping("/conference/{conferenceId}")
-    public ResponseEntity<List<ReviewAssignment>> getAssignmentsByConference(@PathVariable Long conferenceId, Authentication authentication) {
+    public ResponseEntity<?> getAssignmentsByConference(@PathVariable Long conferenceId, Authentication authentication) {
         String username = authentication.getName();
         List<ReviewAssignment> assignments = reviewAssignmentService.getAssignmentsByConference(conferenceId, username);
+        if (assignments == null) {
+            return new ResponseEntity<>("Conference not found or you are not authorized to view assignments.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(assignments);
     }
 }

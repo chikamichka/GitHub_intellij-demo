@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 
 @Service
@@ -27,41 +28,39 @@ public class SubmissionService {
 
     public Submission createSubmission(Submission submission, Long conferenceId, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
-        Conference conference = conferenceRepository.findById(conferenceId)
-                .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
+        Conference conference = conferenceRepository.findById(conferenceId).orElse(null);
         if (currentUser != null && currentUser.getRoles().contains("AUTHOR")) {
+            assert conference != null;
             if (currentUser.equals(conference.getEditor())) {
-                throw new IllegalStateException("Authors who are editors of the conference cannot submit to it.");
+                return null;
             }
             submission.setConference(conference);
             submission.getAuteurs().add(currentUser);
             for (User author : submission.getAuteurs()) {
-                User user = userRepository.findById(author.getId()).orElseThrow(() -> new NoSuchElementException("User not found with id " + author.getId()));
+                User user = userRepository.findById(author.getId()).orElse(null);
                 submission.getAuteurs().add(user);
             }
             return submissionRepository.save(submission);
         } else {
-            throw new IllegalStateException("Only users with 'AUTHOR' role can create submissions.");
+            return null;
         }
     }
-
-
 
     public Submission updateSubmission(Long id, Submission submission, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
         if (currentUser != null && currentUser.getRoles().contains("AUTHOR")) {
-            Submission existingSubmission = submissionRepository.findById(id)
-                    .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + id));
+            Submission existingSubmission = submissionRepository.findById(id).orElse(null);
+            assert existingSubmission != null;
             if (existingSubmission.getAuteurs().contains(currentUser)) {
                 existingSubmission.setTitreArticle(submission.getTitreArticle());
                 existingSubmission.setResume(submission.getResume());
                 existingSubmission.setDocumentPdf(submission.getDocumentPdf());
                 return submissionRepository.save(existingSubmission);
             } else {
-                throw new IllegalStateException("Only authors who participated in the submission can update it.");
+                return null;
             }
         } else {
-            throw new IllegalStateException("Only users with 'AUTHOR' role can update submissions.");
+            return null;
         }
     }
 
@@ -70,30 +69,28 @@ public class SubmissionService {
         if (currentUser != null && currentUser.getRoles().contains("AUTHOR")) {
             return submissionRepository.findByAuteursContaining(currentUser);
         } else {
-            throw new IllegalStateException("Only users with 'AUTHOR' role can view submissions.");
+            return null;
         }
     }
 
     public List<Submission> getSubmissionsByConference(Long conferenceId, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
-        Conference conference = conferenceRepository.findById(conferenceId)
-                .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
-        if (currentUser != null && currentUser.equals(conference.getEditor())) {
+        Conference conference = conferenceRepository.findById(conferenceId).orElse(null);
+        if (currentUser != null && currentUser.equals(Objects.requireNonNull(conference).getEditor())) {
             return submissionRepository.findByConference(conference);
         } else {
-            throw new IllegalStateException("Only the editor of the conference can view all submissions.");
+            return null;
         }
     }
 
     public Submission getSubmissionById(Long id, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
-        Submission submission = submissionRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + id));
+        Submission submission = submissionRepository.findById(id).orElse(null);
         if (currentUser != null &&
-                (submission.getAuteurs().contains(currentUser) || submission.getConference().getEditor().equals(currentUser))) {
+                (Objects.requireNonNull(submission).getAuteurs().contains(currentUser) || submission.getConference().getEditor().equals(currentUser))) {
             return submission;
         } else {
-            throw new IllegalStateException("You are not authorized to view this submission.");
+            return null;
         }
     }
 }

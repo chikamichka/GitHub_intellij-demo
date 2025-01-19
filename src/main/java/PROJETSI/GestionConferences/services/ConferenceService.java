@@ -30,15 +30,17 @@ public class ConferenceService {
             conference.setEditor(currentUser);
             return conferenceRepository.save(conference);
         } else {
-            throw new IllegalStateException("Only users with 'EDITOR' role can create conferences.");
+            return null;
         }
     }
 
     public Conference updateConference(Long id, Conference conference, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
         if (currentUser != null && currentUser.getRoles().contains("EDITOR")) {
-            Conference existingConference = conferenceRepository.findById(id)
-                    .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + id));
+            Conference existingConference = conferenceRepository.findById(id).orElse(null);
+            if (existingConference == null) {
+                return null;
+            }
             if (existingConference.getCreatorId().equals(currentUser.getId())) {
                 existingConference.setTitre(conference.getTitre());
                 existingConference.setDateDebut(conference.getDateDebut());
@@ -47,25 +49,24 @@ public class ConferenceService {
                 existingConference.setEtat(conference.getEtat());
                 return conferenceRepository.save(existingConference);
             } else {
-                throw new IllegalStateException("Only the creator can update this conference.");
+                return null;
             }
         } else {
-            throw new IllegalStateException("Only users with 'EDITOR' role can update conferences.");
+            return null;
         }
     }
 
-    public void deleteConference(Long id, String username) {
+    public boolean deleteConference(Long id, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
         if (currentUser != null && currentUser.getRoles().contains("EDITOR")) {
-            Conference existingConference = conferenceRepository.findById(id)
-                    .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + id));
-            if (existingConference.getCreatorId().equals(currentUser.getId())) {
-                conferenceRepository.deleteById(id);
-            } else {
-                throw new IllegalStateException("Only the creator can delete this conference.");
+            Conference existingConference = conferenceRepository.findById(id).orElse(null);
+            if (existingConference == null || !existingConference.getCreatorId().equals(currentUser.getId())) {
+                return false;
             }
+            conferenceRepository.deleteById(id);
+            return true;
         } else {
-            throw new IllegalStateException("Only users with 'EDITOR' role can delete conferences.");
+            return false;
         }
     }
 
@@ -74,21 +75,22 @@ public class ConferenceService {
     }
 
     public Conference getConferenceById(Long id) {
-        return conferenceRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + id));
+        return conferenceRepository.findById(id).orElse(null);
     }
 
     public Conference setWinningSubmission(Long conferenceId, Long submissionId, String username) {
         User currentUser = userRepository.findByUsername(username).orElse(null);
-        Conference conference = conferenceRepository.findById(conferenceId)
-                .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
-        if (currentUser != null && currentUser.getId().equals(conference.getEditor().getId())) {
-            Submission winningSubmission = submissionRepository.findById(submissionId)
-                    .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + submissionId));
-            conference.setWinningSubmission(winningSubmission);
-            return conferenceRepository.save(conference);
+        Conference conference = conferenceRepository.findById(conferenceId).orElse(null);
+        if (conference != null && currentUser != null && currentUser.getId().equals(conference.getEditor().getId())) {
+            Submission winningSubmission = submissionRepository.findById(submissionId).orElse(null);
+            if (winningSubmission != null) {
+                conference.setWinningSubmission(winningSubmission);
+                return conferenceRepository.save(conference);
+            } else {
+                return null;
+            }
         } else {
-            throw new IllegalStateException("Only the editor can set the winning submission for this conference.");
+            return null;
         }
     }
 }

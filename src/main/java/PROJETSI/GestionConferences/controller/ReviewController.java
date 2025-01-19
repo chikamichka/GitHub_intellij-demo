@@ -21,33 +21,45 @@ public class ReviewController {
 
     @PreAuthorize("hasRole('REVIEWER')")
     @PostMapping
-    public ResponseEntity<Review> createReview(@RequestBody Review review, @RequestParam Long submissionId, Authentication authentication) {
+    public ResponseEntity<?> createReview(@RequestBody Review review, @RequestParam Long submissionId, Authentication authentication) {
         String username = authentication.getName();
         Review createdReview = reviewService.createReview(review, submissionId, username);
+        if (createdReview == null) {
+            return new ResponseEntity<>("Submission not found, reviewer not assigned, or invalid credentials.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReview);
     }
 
     @PreAuthorize("hasRole('REVIEWER')")
     @GetMapping("/reviewer")
-    public ResponseEntity<List<Review>> getReviewsByReviewer(Authentication authentication) {
+    public ResponseEntity<?> getReviewsByReviewer(Authentication authentication) {
         String username = authentication.getName();
         List<Review> reviews = reviewService.getReviewsByReviewer(username);
+        if (reviews == null) {
+            return new ResponseEntity<>("Reviewer not found or invalid credentials.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(reviews);
     }
 
     @PreAuthorize("hasRole('EDITOR')")
     @GetMapping("/submission/{submissionId}")
-    public ResponseEntity<List<Review>> getReviewsBySubmission(@PathVariable Long submissionId, Authentication authentication) {
+    public ResponseEntity<?> getReviewsBySubmission(@PathVariable Long submissionId, Authentication authentication) {
         String username = authentication.getName();
         List<Review> reviews = reviewService.getReviewsBySubmission(submissionId, username);
+        if (reviews == null) {
+            return new ResponseEntity<>("Submission not found or you are not authorized to view reviews.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(reviews);
     }
 
     @PreAuthorize("hasRole('REVIEWER')")
     @PutMapping("/{id}")
-    public ResponseEntity<Review> updateReview(@PathVariable Long id, @RequestBody Review review, Authentication authentication) {
+    public ResponseEntity<?> updateReview(@PathVariable Long id, @RequestBody Review review, Authentication authentication) {
         String username = authentication.getName();
         Review updatedReview = reviewService.updateReview(id, review, username);
+        if (updatedReview == null) {
+            return new ResponseEntity<>("Review not found or you are not authorized to update this review.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(updatedReview);
     }
 }

@@ -43,7 +43,7 @@ public class Submission {
     @JoinColumn(name = "conference_id")
     private Conference conference;
 
-    @OneToMany(mappedBy = "submission")
+    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Review> reviews = new HashSet<>();
 
 

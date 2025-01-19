@@ -30,45 +30,36 @@ public class ReviewAssignmentService {
 
     public ReviewAssignment assignReviewer(Long submissionId, Long reviewerId, Long conferenceId, String username) {
         User editor = userRepository.findByUsername(username).orElse(null);
-        Submission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + submissionId));
-        User reviewer = userRepository.findById(reviewerId)
-                .orElseThrow(() -> new NoSuchElementException("Reviewer not found with id " + reviewerId));
-        Conference conference = conferenceRepository.findById(conferenceId)
-                .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
+        Submission submission = submissionRepository.findById(submissionId).orElse(null);
+        User reviewer = userRepository.findById(reviewerId).orElse(null);
+        Conference conference = conferenceRepository.findById(conferenceId).orElse(null);
 
-        assert editor != null;
-        if (!editor.getId().equals(conference.getEditor().getId())) {
-            throw new IllegalStateException("Only the editor can assign reviewers for this conference.");
+        if (editor != null && submission != null && reviewer != null && conference != null) {
+            if (!editor.getId().equals(conference.getEditor().getId()) ||
+                    submission.getAuteurs().contains(reviewer) ||
+                    !reviewer.getRoles().contains("REVIEWER")) {
+                return null;
+            }
+            ReviewAssignment reviewAssignment = new ReviewAssignment(submission, reviewer, conference);
+            return reviewAssignmentRepository.save(reviewAssignment);
+        } else {
+            return null;
         }
-
-        if (submission.getAuteurs().contains(reviewer)) {
-            throw new IllegalStateException("A reviewer cannot be assigned to their own submission.");
-        }
-
-        if (!reviewer.getRoles().contains("REVIEWER")) {
-            throw new IllegalStateException("User does not have the REVIEWER role.");
-        }
-
-        ReviewAssignment reviewAssignment = new ReviewAssignment(submission, reviewer, conference);
-        return reviewAssignmentRepository.save(reviewAssignment);
     }
 
     public List<ReviewAssignment> getAssignmentsByReviewer(String username) {
         User reviewer = userRepository.findByUsername(username).orElse(null);
-        return reviewAssignmentRepository.findByReviewer(reviewer);
+        return reviewer != null ? reviewAssignmentRepository.findByReviewer(reviewer) : null;
     }
 
     public List<ReviewAssignment> getAssignmentsByConference(Long conferenceId, String username) {
         User editor = userRepository.findByUsername(username).orElse(null);
-        Conference conference = conferenceRepository.findById(conferenceId)
-                .orElseThrow(() -> new NoSuchElementException("Conference not found with id " + conferenceId));
+        Conference conference = conferenceRepository.findById(conferenceId).orElse(null);
 
-        assert editor != null;
-        if (!editor.getId().equals(conference.getEditor().getId())) {
-            throw new IllegalStateException("Only the editor can view assignments for this conference.");
+        if (editor != null && conference != null && editor.getId().equals(conference.getEditor().getId())) {
+            return reviewAssignmentRepository.findByConference(conference);
+        } else {
+            return null;
         }
-
-        return reviewAssignmentRepository.findByConference(conference);
     }
 }

@@ -40,7 +40,7 @@ public class Conference {
     @JoinColumn(name = "editor_id")
     private User editor;
 
-    @OneToMany(mappedBy = "conference", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "conference", cascade = CascadeType.ALL,  orphanRemoval = true)
     private Set<Submission> soumissions;
 
     @OneToOne

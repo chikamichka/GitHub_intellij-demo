@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/conferences")
@@ -22,17 +21,23 @@ public class ConferenceController {
 
     @PreAuthorize("hasRole('EDITOR')")
     @PostMapping
-    public ResponseEntity<Conference> createConference(@RequestBody Conference conference, Authentication authentication) {
+    public Object createConference(@RequestBody Conference conference, Authentication authentication) {
         String username = authentication.getName();
         Conference createdConference = conferenceService.createConference(conference, username);
+        if (createdConference == null) {
+            return new ResponseEntity<>("Only users with 'EDITOR' role can create conferences.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(createdConference);
     }
 
     @PreAuthorize("hasRole('EDITOR')")
     @PutMapping("/{id}")
-    public ResponseEntity<Conference> updateConference(@PathVariable Long id, @RequestBody Conference conference, Authentication authentication) {
+    public Object updateConference(@PathVariable Long id, @RequestBody Conference conference, Authentication authentication) {
         String username = authentication.getName();
         Conference updatedConference = conferenceService.updateConference(id, conference, username);
+        if (updatedConference == null) {
+            return new ResponseEntity<>("Conference not found with id " + id + " or not permitted to update.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(updatedConference);
     }
 
@@ -40,14 +45,11 @@ public class ConferenceController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteConference(@PathVariable Long id, Authentication authentication) {
         String username = authentication.getName();
-        try {
-            conferenceService.deleteConference(id, username);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (NoSuchElementException e) {
-            return new ResponseEntity<>("Conference not found with id " + id, HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
+        boolean isDeleted = conferenceService.deleteConference(id, username);
+        if (!isDeleted) {
+            return new ResponseEntity<>("Conference not found with id " + id + " or not permitted to delete.", HttpStatus.FORBIDDEN);
         }
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping
@@ -57,16 +59,22 @@ public class ConferenceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Conference> getConferenceById(@PathVariable Long id) {
+    public Object getConferenceById(@PathVariable Long id) {
         Conference conference = conferenceService.getConferenceById(id);
+        if (conference == null) {
+            return new ResponseEntity<>("Conference not found with id " + id, HttpStatus.NOT_FOUND);
+        }
         return ResponseEntity.ok(conference);
     }
 
     @PreAuthorize("hasRole('EDITOR')")
     @PostMapping("/{id}/set-winning-submission")
-    public ResponseEntity<Conference> setWinningSubmission(@PathVariable Long id, @RequestParam Long submissionId, Authentication authentication) {
+    public Object setWinningSubmission(@PathVariable Long id, @RequestParam Long submissionId, Authentication authentication) {
         String username = authentication.getName();
         Conference updatedConference = conferenceService.setWinningSubmission(id, submissionId, username);
+        if (updatedConference == null) {
+            return new ResponseEntity<>("Conference or Submission not found or not permitted to set winning submission.", HttpStatus.FORBIDDEN);
+        }
         return ResponseEntity.ok(updatedConference);
     }
 }

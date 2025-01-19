@@ -43,13 +43,11 @@ public class User {
     @Column(name = "role")
     private Set<String> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "editor")
+    @OneToMany(mappedBy = "editor", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Conference> conferences;
-
-    @ManyToMany(mappedBy = "auteurs")
+    @ManyToMany(mappedBy = "auteurs", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     private Set<Submission> submissions;
-
-    @OneToMany(mappedBy = "reviewer")
+    @OneToMany(mappedBy = "reviewer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Review> reviews;
 
     public void addRole(String role) {
@@ -58,6 +56,7 @@ public class User {
         }
         roles.add(role.toUpperCase());
     }
+
 
     public Long getId() {
         return id;

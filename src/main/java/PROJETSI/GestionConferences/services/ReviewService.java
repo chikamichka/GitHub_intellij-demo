@@ -30,48 +30,45 @@ public class ReviewService {
 
     public Review createReview(Review review, Long submissionId, String username) {
         User reviewer = userRepository.findByUsername(username).orElse(null);
-        Submission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + submissionId));
+        Submission submission = submissionRepository.findById(submissionId).orElse(null);
+        ReviewAssignment assignment = reviewAssignmentRepository.findBySubmissionAndReviewer(submission, reviewer).orElse(null);
 
-        ReviewAssignment assignment = reviewAssignmentRepository.findBySubmissionAndReviewer(submission, reviewer)
-                .orElseThrow(() -> new IllegalStateException("No assignment found for this reviewer and submission."));
-
-        review.setSubmission(submission);
-        review.setReviewer(reviewer);
-        return reviewRepository.save(review);
+        if (reviewer != null && submission != null && assignment != null) {
+            review.setSubmission(submission);
+            review.setReviewer(reviewer);
+            return reviewRepository.save(review);
+        } else {
+            return null;
+        }
     }
 
     public List<Review> getReviewsByReviewer(String username) {
         User reviewer = userRepository.findByUsername(username).orElse(null);
-        return reviewRepository.findByReviewer(reviewer);
+        return reviewer != null ? reviewRepository.findByReviewer(reviewer) : null;
     }
 
     public List<Review> getReviewsBySubmission(Long submissionId, String username) {
-        Submission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new NoSuchElementException("Submission not found with id " + submissionId));
+        Submission submission = submissionRepository.findById(submissionId).orElse(null);
         User editor = userRepository.findByUsername(username).orElse(null);
 
-        assert editor != null;
-        if (!editor.getId().equals(submission.getConference().getEditor().getId())) {
-            throw new IllegalStateException("Only the editor can view reviews for this submission.");
+        if (submission != null && editor != null && editor.getId().equals(submission.getConference().getEditor().getId())) {
+            return reviewRepository.findBySubmission(submission);
+        } else {
+            return null;
         }
-
-        return reviewRepository.findBySubmission(submission);
     }
 
     public Review updateReview(Long id, Review review, String username) {
         User reviewer = userRepository.findByUsername(username).orElse(null);
-        Review existingReview = reviewRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Review not found with id " + id));
+        Review existingReview = reviewRepository.findById(id).orElse(null);
 
-        assert reviewer != null;
-        if (!existingReview.getReviewer().getId().equals(reviewer.getId())) {
-            throw new IllegalStateException("You can only update your own reviews.");
+        if (existingReview != null && reviewer != null && existingReview.getReviewer().getId().equals(reviewer.getId())) {
+            existingReview.setNote(review.getNote());
+            existingReview.setCommentaires(review.getCommentaires());
+            existingReview.setEtat(review.getEtat());
+            return reviewRepository.save(existingReview);
+        } else {
+            return null;
         }
-
-        existingReview.setNote(review.getNote());
-        existingReview.setCommentaires(review.getCommentaires());
-        existingReview.setEtat(review.getEtat());
-        return reviewRepository.save(existingReview);
     }
 }
