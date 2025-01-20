@@ -1,0 +1,4 @@
+mvn clean install -X
+mvn spring-boot:run
+cd flutter_rest_api_demo
+flutter run
