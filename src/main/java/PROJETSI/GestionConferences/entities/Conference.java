@@ -51,10 +51,6 @@ public class Conference {
     @Column(name = "creator_id")
     private Long creatorId;
 
-
-
-
-
     // Getters and setters for creatorId
     public Long getCreatorId() {
         return creatorId;

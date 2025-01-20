@@ -125,4 +125,21 @@ public class UserService {
         User user = userRepository.findByUsername(username).orElse(null);
         return user != null && user.getInfos().contains("Admin user");
     }
+
+    public List<Map<String, Object>> getUsersInfos() {
+        List<User> users = (List<User>) userRepository.findAll();
+        List<Map<String, Object>> usersInfo = new ArrayList<>();
+        for (User user : users) {
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("nom", user.getNom());
+            info.put("prenom", user.getPrenom());
+            info.put("username", user.getUsername());
+            info.put("infos", user.getInfos());
+            info.put("roles", user.getRoles());
+            usersInfo.add(info);
+        }
+        return usersInfo;
+    }
+
+
 }

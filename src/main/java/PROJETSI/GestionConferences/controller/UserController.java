@@ -25,6 +25,12 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/info")
+    public ResponseEntity<List<Map<String, Object>>> getUsersInfos() {
+        List<Map<String, Object>> usersInfo = userService.getUsersInfo();
+        return ResponseEntity.ok(usersInfo);
+    }
+
     @PreAuthorize("@userService.hasAdminRole(authentication.name)")
     @PostMapping
     public Object createUser(@RequestBody User user) {
@@ -60,7 +66,7 @@ public class UserController {
         if (!isDeleted) {
             return new ResponseEntity<>("User not found with id " + id, HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return new ResponseEntity<>("User Deleted with id" +id ,HttpStatus.NO_CONTENT);
     }
 
     @PreAuthorize("@userService.hasAdminRole(authentication.name)")
